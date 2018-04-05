@@ -17,107 +17,82 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import argparse, sys
+import json, argparse, sys
 
 import smtplib, email
 from email.message import EmailMessage
 
 import csv, ast
 
-def constructMessage(template, args):
+def constructMessage(template, record, mailout_config):
     msg = EmailMessage()
-    msg['Subject'] = args.subject
-    msg['From'] = args.from_address
-    msg['To'] = record[args.address]
+    msg['Subject'] = mailout_config['subject'].format(**record)
+    msg['From'] = mailout_config['from'].format(**record)
+    msg['To'] = mailout_config['to'].format(**record)
     msg.set_content(template.format(**record))
 
     return(msg)
     
-def testRecord(record, args):
-    for rule in args.rules:
-        if not eval(rule.format(**record)):
-            return False
+
+def testRecord(record, mailout_config):
+    if 'rules' in mailout_config:
+        for rule in mailout_config['rules']:
+            if not eval(rule.format(**record)):
+                return False
 
     return True
 
-def parseArgs():
+
+def getConfig():
 
     parser = argparse.ArgumentParser(description="Command-line mail merge.",
                                      epilog="""
-Any occurrence of {BLAH} in the message tempalte, where BLAH is the
-header of a column in the recipients CSV file is replaced by value in
-the corresponding recipient record.
+Refer to documentation for format of configuration file.
 """)
 
-    parser.add_argument("smtp_hostname", type=str,
-                        help="SMTP server hostname.")
-
-    parser.add_argument("smtp_port", type=int,
-                        help="SMTP server port.")
-
-    parser.add_argument("from_address", type=str,
-                        help="Message from address.")
-
-    parser.add_argument("subject", type=str,
-                        help="Message subject.")
-
-    parser.add_argument("recipients_file", type=argparse.FileType("r"),
-                        help="CSV file containing names and addresses.")
-
-    parser.add_argument("template_file", type=argparse.FileType("r"),
-                        help="File containing message template.")
-
-    parser.add_argument("-a", "--address", type=str, default="Email",
-                        help="Header of CSV column containing email addresses. (Default is \"Email\".)")
-    parser.add_argument("-u","--username", type=str,
-                        help="Username for SMTP server.")
-
-    parser.add_argument("-p","--password", type=str,
-                        help="Password for SMTP server.")
-
-    parser.add_argument("-r","--rules", type=str, nargs='+', default=[],
-                        help="Rules which records must satisfy for email to be sent.")
+    parser.add_argument("config_file", metavar="configuration_file", type=argparse.FileType("r"),
+                        help="Configuration file for mailout.")
 
     parser.add_argument("-d","--dry_run", action='store_true',
-                        help="Dry run: don't send anything.")
+                        help="Perform dry run: connect to server, but don't actually send any mail.")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    config = json.load(args.config_file)
+    config['dry_run'] = args.dry_run
+
+    return config
 
 
-if __name__ == '__main__':
+def doMailout(server, mailout_config, dry_run):
 
-    args = parseArgs()
-
-    # Read in template
-    template = args.template_file.read()
-
-    # Initialize CSV reader
-    reader = csv.DictReader(args.recipients_file)
+     # Initialize CSV reader
+    with recipients_file as mailout_config['recipients']:
+        reader = csv.DictReader(recipients_file)
     
-    if args.address not in reader.fieldnames:
-        print("Address header '{}' not found in CSV header.".format(args.address))
-        sys.exit(1)
-
-
-    if not args.dry_run:
-
-        with smtplib.SMTP(host=args.smtp_hostname, port=args.smtp_port) as server:
-            server.starttls()
-
-            if args.username != None:
-                server.login(args.username, args.password)
-
-            for record in reader:
-                if testRecord(record, args):
-                    msg = constructMessage(template, args)
+        for record in reader:
+            if testRecord(record, args):
+                msg = constructMessage(record, mailout_config)
+                if not dry_run:
                     print("Sending to {} ... ".format(msg['To']), end='')
                     server.send_message(msg)
                     print("done.")
-    else:
+                else:
+                    print("Message will be sent to {}".format(msg['To']))
 
-        for record in reader:
-            if testRecord(record, args):
-                msg = constructMessage(template, args)
-                print("Message will be sent to {}".format(msg['To']))
+if __name__ == '__main__':
 
+    config = getConfig()
+    dry_run = config['dry_run']
+    
+    with smtplib.SMTP(host=config['server']['host'], port=config['server']['port']) as server:
+        if 'use_tls' in config['server'] and config['server']['use_tls']:
+            server.starttls()
 
+        if 'login' in config['server']:
+            username = config['server']['login']['username']
+            password = config['server']['login']['password']
+            server.login(username, password)
+
+        for mailout_config in config['mailouts']:
+            doMailout(server, mailout_config, dry_run)

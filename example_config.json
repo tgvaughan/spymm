@@ -1,0 +1,30 @@
+{
+    "server": {
+        "host": "smtp.example.com",
+        "port": 25,
+        "use_tls": true,
+        "login": {
+            "username": "user",
+            "password": "pass"
+        }
+    },
+
+    "mailouts": [
+        {
+            "from": "from@example.com",
+            "to": "{Email}",
+            "subject": "Subject for each email",
+            "recipients": "recipients.csv",
+            "template": "accepted_template.csv",
+            "rules": ["'{Accepted}' == 'Yes'"]
+        },
+        {
+            "from": "from@example.com",
+            "to": "{Email}",
+            "subject": "Subject for each email",
+            "recipients": "recipients.csv",
+            "template": "rejected_template.csv",
+            "rules": ["'{Accepted}' != 'Yes'"]
+        }
+    ]
+}
