@@ -71,7 +71,7 @@ def doMailout(server, mailout_config, dry_run):
         reader = csv.DictReader(recipients_file)
     
         for record in reader:
-            if testRecord(record, args):
+            if testRecord(record, mailout_config):
                 msg = constructMessage(record, mailout_config)
                 if not dry_run:
                     print("Sending to {} ... ".format(msg['To']), end='')
