@@ -17,12 +17,10 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import json, argparse, sys
+import json, argparse, sys, csv
 
 import smtplib, email
 from email.message import EmailMessage
-
-import csv, ast
 
 def constructMessage(record, mailout_config):
     msg = EmailMessage()
@@ -68,7 +66,6 @@ Refer to documentation for format of configuration file.
 
 def doMailout(server, mailout_config, dry_run):
 
-     # Initialize CSV reader
     with open(mailout_config['recipients'], "r") as recipients_file:
         reader = csv.DictReader(recipients_file)
     
@@ -81,6 +78,7 @@ def doMailout(server, mailout_config, dry_run):
                     print("done.")
                 else:
                     print("Message will be sent to {}".format(msg['To']))
+
 
 if __name__ == '__main__':
 
