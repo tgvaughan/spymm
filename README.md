@@ -96,8 +96,14 @@ In this example configuration, we have used such rules to distinguish between
 recipients whose submission has been accepted (mailout 1) vs those whose application
 has been rejected (mailout 2).
 
-To send the emails, all that is required now is to run the `spymm` python script like
-so:
+Note that the template file name defined in the configuration file is processed
+according to the same way as the template itself.  This means that the example
+task could have been accomplished using a single mailout section,
+placing the templates in files named `accepted.Yes.template` and `accepted.No.template`
+and using `"template": "accepted.{Accepted}.template"` in the configuration file.
+
+To actually send the emails, all that is required now is to run the `spymm`
+python script like so:
 ```
     $ python3 spymm.py config.json
 ```

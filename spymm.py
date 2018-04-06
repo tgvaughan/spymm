@@ -24,12 +24,14 @@ from email.message import EmailMessage
 
 import csv, ast
 
-def constructMessage(template, record, mailout_config):
+def constructMessage(record, mailout_config):
     msg = EmailMessage()
     msg['Subject'] = mailout_config['subject'].format(**record)
     msg['From'] = mailout_config['from'].format(**record)
     msg['To'] = mailout_config['to'].format(**record)
-    msg.set_content(template.format(**record))
+
+    with open(mailout_config['template'].format(**record), "r") as template_file:
+        msg.set_content(template_file.read().format(**record))
 
     return(msg)
     
@@ -67,7 +69,7 @@ Refer to documentation for format of configuration file.
 def doMailout(server, mailout_config, dry_run):
 
      # Initialize CSV reader
-    with recipients_file as mailout_config['recipients']:
+    with open(mailout_config['recipients'], "r") as recipients_file:
         reader = csv.DictReader(recipients_file)
     
         for record in reader:
