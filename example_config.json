@@ -11,19 +11,19 @@
 
     "mailouts": [
         {
-            "from": "from@example.com",
+            "from": "me@example.com",
             "to": "{Email}",
             "subject": "Subject for each email",
             "recipients": "recipients.csv",
-            "template": "accepted_template.csv",
+            "template": "acceptance.template",
             "rules": ["'{Accepted}' == 'Yes'"]
         },
         {
-            "from": "from@example.com",
+            "from": "me@example.com",
             "to": "{Email}",
             "subject": "Subject for each email",
             "recipients": "recipients.csv",
-            "template": "rejected_template.csv",
+            "template": "rejection.template",
             "rules": ["'{Accepted}' != 'Yes'"]
         }
     ]
