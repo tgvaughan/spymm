@@ -64,7 +64,7 @@ Refer to documentation for format of configuration file.
     return config
 
 
-def doMailout(server, mailout_config, dry_run):
+def doMailout(server, mailout_config):
 
     with open(mailout_config['recipients'], "r") as recipients_file:
         reader = csv.DictReader(recipients_file)
@@ -72,7 +72,7 @@ def doMailout(server, mailout_config, dry_run):
         for record in reader:
             if testRecord(record, mailout_config):
                 msg = constructMessage(record, mailout_config)
-                if not dry_run:
+                if server != None:
                     print("Sending to {} ... ".format(msg['To']), end='')
                     server.send_message(msg)
                     print("done.")
@@ -84,15 +84,25 @@ if __name__ == '__main__':
 
     config = getConfig()
     dry_run = config['dry_run']
-    
-    with smtplib.SMTP(host=config['server']['host'], port=config['server']['port']) as server:
-        if 'use_tls' in config['server'] and config['server']['use_tls']:
-            server.starttls()
 
-        if 'login' in config['server']:
-            username = config['server']['login']['username']
-            password = config['server']['login']['password']
-            server.login(username, password)
+    try:
+        if dry_run:
+            server = None
+        else:
+            server = smtplib.SMTP(host=config['server']['host'],
+                                  port=config['server']['port'])
+
+            if 'use_tls' in config['server'] and config['server']['use_tls']:
+                server.starttls()
+
+            if 'login' in config['server']:
+                username = config['server']['login']['username']
+                password = config['server']['login']['password']
+                server.login(username, password)
 
         for mailout_config in config['mailouts']:
-            doMailout(server, mailout_config, dry_run)
+            doMailout(server, mailout_config)
+
+    finally:
+        if server != None:
+            server.quit()
