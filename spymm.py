@@ -53,37 +53,51 @@ Refer to documentation for format of configuration file.
     parser.add_argument("config_file", metavar="configuration_file", type=argparse.FileType("r"),
                         help="Configuration file for mailout.")
 
-    parser.add_argument("-d","--dry_run", action='store_true',
+    parser.add_argument("-d","--dry_run", action="store_true",
                         help="Perform dry run: connect to server, but don't actually send any mail.")
+    parser.add_argument("-v","--verbose", action="store_true",
+                        help="Print detailed output, including full contents of each message.")
 
     args = parser.parse_args()
 
     config = json.load(args.config_file)
     config['dry_run'] = args.dry_run
+    config['verbose'] = args.verbose
 
     return config
 
 
-def doMailout(server, mailout_config):
+def doMailout(server, mailout_config, verbose):
 
     with open(mailout_config['recipients'], "r") as recipients_file:
         reader = csv.DictReader(recipients_file)
     
+        msg_count = 0
+        
         for record in reader:
             if testRecord(record, mailout_config):
                 msg = constructMessage(record, mailout_config)
-                if server != None:
-                    print("Sending to {} ... ".format(msg['To']), end='')
-                    server.send_message(msg)
-                    print("done.")
-                else:
-                    print("Message will be sent to {}".format(msg['To']))
+                msg_count += 1
 
+                if verbose:
+                    print("*** Message {}:".format(msg_count))
+                    print(msg)
+                
+                if server != None:
+                    server.send_message(msg)
+
+                    if verbose:
+                        print("*** Message {} successfully sent to {}".format(
+                            msg_count, msg['To']))
+                              
+        print("*** {} messages{}in total".format(msg_count, " " if dry_run else " sent "))
+            
 
 if __name__ == '__main__':
 
     config = getConfig()
     dry_run = config['dry_run']
+    verbose = config['verbose']
 
     try:
         if dry_run:
@@ -101,7 +115,7 @@ if __name__ == '__main__':
                 server.login(username, password)
 
         for mailout_config in config['mailouts']:
-            doMailout(server, mailout_config)
+            doMailout(server, mailout_config, verbose)
 
     finally:
         if server != None:
