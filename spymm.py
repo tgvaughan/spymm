@@ -35,12 +35,17 @@ def constructMessage(record, mailout_config):
     
 
 def testRecord(record, mailout_config):
-    if 'rules' in mailout_config:
-        for rule in mailout_config['rules']:
-            if not eval(rule.format(**record)):
-                return False
+    try:
+        if 'rules' in mailout_config:
+            for rule in mailout_config['rules']:
+                if not eval(rule.format(**record)):
+                    return False
 
-    return True
+        return True
+
+    except Exception as err:
+        print("Error evaluating rules: {}".format(err))
+        sys.exit(1)
 
 
 def getConfig():
@@ -60,9 +65,14 @@ Refer to documentation for format of configuration file.
 
     args = parser.parse_args()
 
-    config = json.load(args.config_file)
-    config['dry_run'] = args.dry_run
-    config['verbose'] = args.verbose
+    try:
+        config = json.load(args.config_file)
+        config['dry_run'] = args.dry_run
+        config['verbose'] = args.verbose
+
+    except Exception as err:
+        print("Error reading config file: {}".format(err))
+        sys.exit(1)
 
     return config
 
@@ -99,10 +109,12 @@ if __name__ == '__main__':
     dry_run = config['dry_run']
     verbose = config['verbose']
 
+    exit_status = 0
+
+    server = None
+
     try:
-        if dry_run:
-            server = None
-        else:
+        if not dry_run:
             server = smtplib.SMTP(host=config['server']['host'],
                                   port=config['server']['port'])
 
@@ -117,6 +129,16 @@ if __name__ == '__main__':
         for mailout_config in config['mailouts']:
             doMailout(server, mailout_config, verbose)
 
+    except KeyError as err:
+        print("Undefined configuration item: {}".format(err))
+        exit_status = 1
+
+    except Exception as err:
+        print("Error during mailout: {}".format(err))
+        exit_status = 1
+
     finally:
         if server != None:
             server.quit()
+
+    sys.exit(exit_status)
