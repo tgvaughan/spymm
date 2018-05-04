@@ -26,8 +26,20 @@ def constructMessage(record, mailout_config):
     msg = EmailMessage()
     msg['Subject'] = mailout_config['subject'].format(**record)
     msg['From'] = mailout_config['from'].format(**record)
-    msg['To'] = mailout_config['to'].format(**record)
 
+    if isinstance(mailout_config['to'], list):
+        msg['To'] = ", ".join(map(lambda s: s.format(**record),
+                                  filter(lambda s: len(s)>0, mailout_config['to'])))
+    else:
+        msg['To'] = mailout_config['to'].format(**record)
+
+    if 'cc' in mailout_config:
+        if isinstance(mailout_config['cc'], list):
+            msg['Cc'] = ", ".join(map(lambda s: s.format(**record),
+                                      filter(lambda s: len(s)>0, mailout_config['cc'])))
+        else:
+            msg['Cc'] = mailout_config['cc'].format(**record)
+                
     with open(mailout_config['template'].format(**record), "r") as template_file:
         msg.set_content(template_file.read().format(**record))
 

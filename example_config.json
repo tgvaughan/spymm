@@ -13,6 +13,7 @@
         {
             "from": "me@example.com",
             "to": "{Email}",
+            "cc": "notify1@example.com",
             "subject": "Subject for each email",
             "recipients": "recipients.csv",
             "template": "acceptance.template",
@@ -21,6 +22,7 @@
         {
             "from": "me@example.com",
             "to": "{Email}",
+            "cc": ["notify1@example.com", "notify2@example.com"],
             "subject": "Subject for each email",
             "recipients": "recipients.csv",
             "template": "rejection.template",
