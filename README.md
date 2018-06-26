@@ -113,7 +113,9 @@ these also need to be in the current working directory.
 
 WARNING: Given that this script can send mail to a large number of recpients,
 it is prudent to test out any configuration first using the `--dry_run` option,
-which simply lists the email addresses to which mail will be sent.
+which quotes the number of messages that will be sent. Adding the `--verbose`
+option additionally displays the complete messages which will be sent.  (This
+option can also be enabled for the final mail-out for additional peace of mind.)
 
 License
 -------
