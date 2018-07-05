@@ -17,6 +17,7 @@
             "subject": "Subject for each email",
             "recipients": "recipients.csv",
             "template": "acceptance.template",
+            "attach": "meeting_programme.pdf",
             "rules": ["'{Accepted}' == 'Yes'"]
         },
         {
