@@ -19,11 +19,22 @@
 
 import json, argparse, sys, csv
 
-import smtplib, email
-from email.message import EmailMessage
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from email.utils import formatdate
+from os.path import basename
+
+def createAttachment(filename):
+    with open(filename, "rb") as fh:
+        part = MIMEApplication(fh.read(), Name=basename(filename))
+    part['Content-Disposition'] = 'attachment; filename="{}"'.format(basename(filename))
+
+    return(part)
 
 def constructMessage(record, mailout_config):
-    msg = EmailMessage()
+    msg = MIMEMultipart()
     msg['Subject'] = mailout_config['subject'].format(**record)
     msg['From'] = mailout_config['from'].format(**record)
 
@@ -39,9 +50,18 @@ def constructMessage(record, mailout_config):
                                       filter(lambda s: len(s)>0, mailout_config['cc'])))
         else:
             msg['Cc'] = mailout_config['cc'].format(**record)
+
+    msg['Date'] = formatdate(localtime=True)
                 
     with open(mailout_config['template'].format(**record), "r") as template_file:
-        msg.set_content(template_file.read().format(**record))
+        msg.attach(MIMEText(template_file.read().format(**record)))
+
+    if 'attach' in mailout_config:
+        if isinstance(mailout_config['attach'], list):
+            for attach_name in mailout_config['attach']:
+                msg.attach(createAttachment(attach_name.format(**record)))
+        else:
+            msg.attach(createAttachment(mailout_config['attach'].format(**record)))
 
     return(msg)
     
